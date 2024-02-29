@@ -1,0 +1,135 @@
+@cython.cclass
+class deltaInfoGain:
+    C: list
+    x: np.ndarray
+    A: cython.int
+    cands: cmap[cset[cpair[cython.int, cython.int]], cset[cpair[cython.int, cython.int]]]
+    new_cands: cmap[cset[cpair[cython.int, cython.int]], cset[cpair[cython.int, cython.int]]]
+
+    def __cinit__(
+        self, x: np.ndarray, C: list, A: cython.int, cands: cmap[cset[cpair[cython.int, cython.int]], cset[cpair[cython.int, cython.int]]]
+    ):
+        self.x = x
+        self.C = C
+        self.A = A
+        self.cands = cands
+        self.new_cands: cmap[cset[cpair[cython.int, cython.int]], cset[cpair[cython.int, cython.int]]] = {}
+
+    @cython.cfunc
+    def candidates(self, t: cython.int, j: cython.int, c: cython.int, size_table: dict):  # -> set[tuple[int, int]]:
+        # ncands = cmap[cset[cpair[cython.int, cython.int]], cset[cython.int]]()
+        cands: cset[cpair[cython.int, cython.int]] = cset[cpair[cython.int, cython.int]]([])
+        pair: cpair[cython.int, cython.int] = cpair[cython.int, cython.int](j, c)
+
+        if t == 0:
+            cands.insert(cpair[cython.int, cython.int](sum(size_table[self.A][j]), size_table[self.A][j][c]))
+            self.new_cands.insert({pair, cands})
+            return cands  # set([(sum(size_table[self.A][j]), size_table[self.A][j][c])])
+
+        last_cands: cset[cpair[cython.int, cython.int]] = dereference(self.cands.find(pair)).second
+        for c1, c2 in last_cands:  # self.candidates(t - 1, j, c, size_table):
+            if c1 > 0 and c2 > 0:
+                cands.insert((c1 - 1, c2 - 1))
+            if c1 < self.x.shape[0]:
+                cands.insert((c1 + 1, c2))
+
+        self.new_cands.insert({pair: cands})
+        return cands
+
+    @cython.cfunc
+    def h(self, a: cython.int, b: cython.int) -> cython.double:
+        return max([self.f(a) - self.f(b), self.g(b) - self.g(a)])
+
+    @cython.cfunc
+    def f(self, k: cython.int) -> cython.double:
+        if k <= 1:
+            return 0
+
+        return k * np.log2((k + 1) / k) + np.log2(k + 1)
+
+    @cython.cfunc
+    def g(self, k: cython.int) -> cython.double:
+        if k <= 2:
+            return 0
+
+        return k * np.log2((k - 1) / k) - np.log2(k - 1)
+
+    @cython.cfunc
+    def calc(self, t: cython.int, size_table: dict) -> cython.double:
+        hs = []
+        st_a = size_table[self.A]
+
+        for c in self.C:
+            for j in st_a.keys():
+                for a, b in self.candidates(t, j, c, size_table):
+                    hs.append(self.h(a, b))
+
+        return max(hs)
+
+
+@cython.cfunc
+def unique_count(x: np.ndarray, column: cython.int) -> dict[cython.uint, cython.uint]:
+    return dict(Counter(x[:, column]))
+
+
+@cython.cfunc
+def build_size_table(x: np.ndarray, C: list) -> dict[cython.uint, list[cython.uint]]:
+    table = {}
+    vals_per_attr = {a: list(unique_count(x, a).keys()) for a in range(x.shape[1] - 1)}
+    for a, vals in vals_per_attr.items():
+        table[a] = {}
+        for vi, v in enumerate(vals):
+            table[a][vi] = []
+            mask = x[:, a] == v
+            for c in C:
+                table[a][vi].append(np.count_nonzero(x[mask, -1] == c))
+
+    return table
+
+
+@cython.cfunc
+def b(x: np.ndarray, i: cython.int, size_table: dict, delta: deltaInfoGain):
+    sum_d: cython.double = 0
+    if i == 0:
+        return 0
+    if i <= 0:
+        return -b(x, -i, size_table, delta)
+
+    for j in range(i):
+        sum_d += delta.calc(j, size_table)  # tem um max aqui
+        cands_j = delta.new_cands
+        delta.cands = cands_j
+
+    return sum_d
+
+
+@cython.cfunc
+def dampening_func(x: np.ndarray, u: np.ndarray, r: cython.int):
+    sign: int = 1
+
+    if u[r] < 0:
+        sign = -1
+        u[r] *= sign
+
+    i: int = 0
+
+    C = list(unique_count(x, -1).keys())
+
+    sizet = build_size_table(x=x, C=C)
+    delta = deltaInfoGain(C=list(range(len(C))), x=x, A=r, cands={})
+
+    print(f"[LD] Starting with i = {i}", end="\r")
+
+    bi = b(x, i, sizet, delta)
+    while True:
+        bip = b(x, i + 1, sizet, delta)
+
+        print(f"[LD] Iteration: {i} | {bi} <= {u[r]} < {bip}", end="\r")
+
+        if bi <= u[r] < bip:
+            break
+
+        i += 1
+        bi = bip
+
+    return (((u[r] - bi) / (bip - bi)) + i) * sign

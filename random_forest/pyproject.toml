@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "reportnoisymaxrandomforest"
+version = "0.3"
+description = ""
+authors = ["Iago Chaves <iagocc@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+numpy = "^1.24.1"
+pandas = "^1.5.2"
+polars = "^0.15.13"
+scikit-learn = "^1.2.0"
+pyarrow = "^10.0.1"
+seaborn = "^0.12.2"
+rich = "^13.0.1"
+mpmath = "^1.2.1"
+joblib = "^1.2.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^22.12.0"
+snakeviz = "^2.1.1"
+ipython = "^8.8.0"
+ipykernel = "^6.23.2"
+
+[tool.black]
+line-length = 120
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
