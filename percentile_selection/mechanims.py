@@ -47,18 +47,27 @@ def rlnm(u: np.ndarray, ss: float, eps: float):
 
 
 @njit(cache=True, nogil=True, fastmath=True)
-def cdf(x: float, scale: float) -> float:
+def exp_cdf(x: float, scale: float) -> float:
     if x < 0:
         return 0
     return 1 - safe_exp(-x / scale)
 
 
 @njit(cache=True, nogil=True, fastmath=True)
-def pdf(x: float, scale: float) -> float:
+def exp_pdf(x: float, scale: float) -> float:
     if x < 0:
         return 0
     return safe_exp(-x / scale) / scale
 
+# CDF and PDF of the student's t-distribution with 3 degrees of freedom
+
+@njit(cache=True, nogil=True, fastmath=True)
+def t3_cdf(x: float) -> float:
+    return 0.5 + (1 / np.pi) * ((x / np.sqrt(3)) / (1 + (x**2 / 3)) + np.arctan(x / np.sqrt(3)))
+
+@njit(cache=True, nogil=True, fastmath=True)
+def t3_pdf(x: float, scale: float) -> float:
+    return 2 / (np.pi * np.sqrt(3) * (1 + (x**2 / 3))**2)
 
 @njit
 def mul(x, y):
@@ -66,7 +75,7 @@ def mul(x, y):
 
 
 @njit(cache=True, nogil=True, fastmath=True)
-def prod_step(r: int, u: np.ndarray, x: float, n: int, scale: float) -> float:
+def prod_step_exp(r: int, u: np.ndarray, x: float, n: int, scale: float, cdf: callable) -> float:
     prod = 1
     for s in range(n):
         if r == s:
@@ -75,13 +84,23 @@ def prod_step(r: int, u: np.ndarray, x: float, n: int, scale: float) -> float:
             prod *= cdf(u[r] - u[s] + x, scale)
     return prod
 
+@njit(cache=True, nogil=True, fastmath=True)
+def prod_step_t3(r: int, u: np.ndarray, x: float, n: int, scale: float, cdf: callable) -> float:
+    prod = 1
+    for s in range(n):
+        if r == s:
+            continue
+        else:
+            prod *= cdf((u[r] - u[s])/scale + x)
+    return prod
+
 
 @njit(cache=True, nogil=True, fastmath=True)
-def int_step(x: float, u: np.ndarray, r: int, scale: float, n: int) -> float:
+def int_step(x: float, u: np.ndarray, r: int, scale: float, n: int, prod_step: callable, cdf: callable, pdf: callable) -> float:
     fx = pdf(x, scale)
     # items = np.array([cdf(u[r] - u[s] + x, scale) for s in range(n) if r != s])
     # prod = np.prod(items)
-    prod = prod_step(r, u, x, n, scale)
+    prod = prod_step(r, u, x, n, scale, cdf)
 
     return fx * prod
 
@@ -89,7 +108,7 @@ def int_step(x: float, u: np.ndarray, r: int, scale: float, n: int) -> float:
 def get_rnm_probs(n: int, scale: float, u: np.ndarray) -> np.ndarray:
     probs = []
     for r in range(n):
-        p, _ = integrate.quad_vec(int_step, 0, np.inf, args=(u, r, scale, n))
+        p, _ = integrate.quad_vec(int_step, 0, np.inf, args=(u, r, scale, n, prod_step_exp, exp_cdf, exp_pdf))
         probs.append(p)
 
     assert np.isclose(
@@ -103,12 +122,27 @@ def rnm_pmf(u: np.ndarray, eps: float, sens: float) -> np.ndarray:
     scale: float = (2 * sens) / eps
     return get_rnm_probs(n, scale, u)
 
+def rnm_tdist_pmf(u: np.ndarray, eps: float, sens: float) -> np.ndarray:
+    n: int = u.size
+    d = 3
+    beta = eps/(2*(d+1))
+    alpha = 2 * np.sqrt(d) * (eps - abs(beta) * (d+1)) / (d+1)
+    N = (2*sens)/alpha
+
+    probs = []
+    for r in range(n):
+        p, _ = integrate.quad_vec(int_step, -np.inf, np.inf, args=(u, r, N, n, prod_step_t3, t3_cdf, t3_pdf))
+        probs.append(p)
+    
+    assert np.isclose(np.array(probs).sum(), 1.0), f"Probs. should sum one (actual {np.array(probs).sum()}, scale {N})."
+    return np.array(probs)
+
 
 def expected_error(u, pmf):
     return u.max() - np.sum(u @ pmf)
 
 
-def expected_error_val(x, k, pmf):
+def expected_val(x, k, pmf):
     return np.sum(x @ pmf)
 
 
