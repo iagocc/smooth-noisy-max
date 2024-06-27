@@ -3,7 +3,7 @@ from src.dispersion.info_gain import InfoGainFriedman
 from src.dispersion.max import Max
 from src.selection.selection import Selection
 from src.selection.exponential import ExponentialMechanism
-from src.selection.rnm import RNM, RLNM, TStudentRLNM, LlnRLNM
+from src.selection.rnm import RNM, RLNM, TStudentRLNM, LlnRLNM, SmoothLaplaceRLNM
 from src.selection.local_dampening import LocalDampeningMechanism
 from src.dp_id3 import DpID3
 from src.dataset import Dataset
@@ -76,7 +76,7 @@ def experiment_dpid3_step(
 
 
 def experiment_dpid3():
-    logger = TreeLogger(experiment_name="lln", verbose=True)
+    logger = TreeLogger(experiment_name="new_ones", verbose=True)
     datasets = [("adult_clean", "income"), ("nltcs", "15"), ("acs", "22")]
     # datasets = [("adult_disc_20bucks", "14")]
     eps = [0.01, 0.05, 0.1, 0.5, 1, 2]
@@ -88,6 +88,7 @@ def experiment_dpid3():
     dm = Max()
     max_n = 50_000
     gs = dm.global_sensitivity(max_n)
+    delta = 1e-6
 
     for d in datasets:
         ds, ds_struc = Dataset.load_dataset(d[0], d[1])
@@ -104,8 +105,9 @@ def experiment_dpid3():
                     # RNM(eps=privacy_budget, sens=gs),
                     # LocalDampeningMechanism(eps=deepcopy(privacy_budget), data=np.copy(ds), shifted=True, sens=gs),
                     # RLNM(eps=privacy_budget, sens=dm.smooth_sensitivity(data=ds, eps=e)),
-                    # TStudentRLNM(eps=privacy_budget, sens=dm.smooth_sensitivity(data=ds, eps=e))
-                    LlnRLNM(eps=privacy_budget, sens=dm.smooth_sensitivity(data=ds, eps=e))
+                    TStudentRLNM(eps=privacy_budget, sens=dm.smooth_sensitivity(ds, TStudentRLNM.get_beta(e, 3)), beta=TStudentRLNM.get_beta(e, 3)),
+                    LlnRLNM(eps=privacy_budget, sens=dm.smooth_sensitivity(ds, LlnRLNM.get_beta(e)), beta=TStudentRLNM.get_beta(e, 3)),
+                    SmoothLaplaceRLNM(eps=privacy_budget, sens=dm.smooth_sensitivity(ds, SmoothLaplaceRLNM.get_beta(e, delta)), delta=delta)
                 ]
                 for m in methods:
                     for step in range(times):
