@@ -190,6 +190,42 @@ def set_majority_dp(tree: Tree, budget: float, sensitivity: float, label_col_nam
             major
         ]  # python 3.7+ the dict is ordered https://mail.python.org/pipermail/python-dev/2017-December/151283.html
 
+def t_beta(eps: float, d: int):
+    return eps/(2*(d+1))
+
+def t_noise(eps: float, sens: float, size: int):
+    def rv(d: int):
+        X = np.random.normal(size=d+1)
+        return X[0] / np.sqrt((sum(X[1:]**2))/d)
+
+    d = 3
+    beta = t_beta(eps, d)
+    Z = np.array([rv(3) for i in range(size)])
+
+    s = 2 * np.sqrt(d) * (eps - abs(beta) * (d+1)) / (d+1)
+    noise = ((2*sens)/s)*Z
+    return noise
+
+def lln_noise(eps: float, sens: float, size: int):
+    def rv(sigma: float, size: int):
+        X = np.random.laplace(size=size)
+        Y = np.random.normal(size=size)
+        Z = X * np.exp(sigma * Y)
+        return Z
+
+    beta = eps/2
+    opt_sigma = np.real(np.roots([5 * eps / beta, -5, 0, -1])[0])
+    Z = rv(opt_sigma, size)
+    alpha = np.exp(-(3/2)*(opt_sigma**2)) * (eps - (abs(beta)/abs(opt_sigma)))
+    noise = ((2*sens)/alpha)*Z
+    return noise
+
+def smooth_lap_beta(eps: float, delta=1e-6):
+    return eps/(2*np.log(2/delta))
+
+def smooth_lap(eps: float, sens: float, size: int):
+    noise = np.random.default_rng().laplace(loc=0, scale=(2*sens)/eps, size=size)
+    return noise
 
 def set_majority_rnm(tree: Tree, budget: float, sens: float, label_col_name: str, dist: str = "laplace") -> None:
     leaves = get_all_leaves(tree)
@@ -199,16 +235,23 @@ def set_majority_rnm(tree: Tree, budget: float, sens: float, label_col_name: str
         scores[max_idx] = 1  # the majority score is one
 
         assert sum(scores.values()) == 1
+        u = np.array(list(scores.values()))
 
         scale = (2 * sens) / budget
         if dist == "laplace":
             noise = np.random.default_rng().laplace(loc=0, scale=scale, size=l.histogram.shape[0])
         elif dist == "exponential":
             noise = np.random.default_rng().exponential(scale=scale, size=l.histogram.shape[0])
+        elif dist == "t":
+            noise = t_noise(budget, sens, u.size)
+        elif dist ==  "lln":
+            noise = lln_noise(budget, sens, u.size)
+        elif dist == "smooth_lap":
+            noise = smooth_lap(budget, sens, u.size)
         else:
             raise Exception("The distribution should be set as expected value (laplace or exponential)")
 
-        scores_noisy = np.array(list(scores.values())) + noise
+        scores_noisy = u + noise
         reported = np.argmax(scores_noisy)
         l.majority = list(scores.keys())[reported]
 

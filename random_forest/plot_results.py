@@ -120,6 +120,9 @@ type_legend = {
     ExperimentType.RLNM_LAPLACE: r"RLNM w/ Laplace",
     ExperimentType.RLNM_EXPONENTIAL: r"RLNM w/ Exp.",
     ExperimentType.LOCAL_DAMPENING: r"Local Dampening",
+    ExperimentType.RLNM_T: r"RLNM Student's T",
+    ExperimentType.RLNM_LLN: r"RLNM LLN",
+    ExperimentType.RLNM_SLAP: r"RLNM LAP",
 }
 
 for ds in datasets:

@@ -1,5 +1,7 @@
 import pandas as pd
 
+from pathlib import Path
+
 
 def clean_dataframe_column_names(df):
     cols = df.columns
@@ -37,6 +39,10 @@ def generate_dataset_summary(
         "classes": ", ".join(classes),
         "n_classes": len(classes),
     }
+
+    output_dir = Path(f'result/{name}/')
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     info_df = pd.Series(info)
     info_df.to_csv(f"result/{name}/info.csv")
 

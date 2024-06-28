@@ -1,0 +1,7 @@
+,0
+continuos,
+n_continuos,0
+discrete,"bruises, cap_shape, odor, population, cap_color, ring_number, habitat, gill_color, gill_spacing, veil_type, stalk_shape, spore_print_color, ring_type, stalk_surface_below_ring, stalk_color_above_ring, stalk_root, cap_surface, gill_size, stalk_surface_above_ring, stalk_color_below_ring, veil_color, gill_attachment"
+n_discrete,22
+classes,"p, e"
+n_classes,2

@@ -10,6 +10,7 @@ import random
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.preprocessing import LabelEncoder
 from rich.progress import Progress
+from pathlib import Path
 
 from forest import build_forest, predict as forest_predict, ExperimentType
 
@@ -73,7 +74,9 @@ def exec(
     result_df = pd.DataFrame(metrics)
     if not eps:  # to fancy our filename
         eps = 0
-    result_df.to_csv(f"result/{name}/logs/metrics_{type.value}_{eps}.csv", index=False)
+    output_dir = Path(f'result/{name}/logs/')
+    output_dir.mkdir(parents=True, exist_ok=True)
+    result_df.to_csv(output_dir / f"metrics_{type.value}_{eps}.csv", index=False)
 
 
 def execute_experiment(
@@ -188,15 +191,16 @@ ntrees = 32
 times = 10
 
 battery = [
-    # ExperimentRun("adult", "income", times, ntrees, 9, budgets),
-    # ExperimentRun("mushroom", "class_name", times, ntrees, 11, budgets),
-    ExperimentRun("nursery", "final_evaluation", times, ntrees, 4, budgets),
+    ExperimentRun("adult", "income", times, ntrees, 9, budgets),
+    ExperimentRun("mushroom", "class_name", times, ntrees, 11, budgets),
+    # ExperimentRun("nursery", "final_evaluation", times, ntrees, 4, budgets),
     # ExperimentRun("gamma", "class_name", times, ntrees, 8, budgets),
-    # ExperimentRun("pendigits", "class_name", times, ntrees, 12, budgets),
-    # ExperimentRun("wallsensor", "class_name", times, ntrees, 4, budgets),
-    # ExperimentRun("compass", "decile_score", times, ntrees, 5, budgets),
-    # ExperimentRun("wine", "quality", times, ntrees, 10, budgets),
+    ExperimentRun("pendigits", "class_name", times, ntrees, 12, budgets),
+    ExperimentRun("wallsensor", "class_name", times, ntrees, 4, budgets),
+    ExperimentRun("compass", "decile_score", times, ntrees, 5, budgets),
+    ExperimentRun("wine", "quality", times, ntrees, 10, budgets),
 ]
-out = list(set(ExperimentType) - set([ExperimentType.PF]))
+# out = list(set(ExperimentType) - set([ExperimentType.PF]))
 # out = [ExperimentType.DEFAULT, ExperimentType.SMOOTHED_DP]
+out = list(set(ExperimentType) - set([ExperimentType.RLNM_SLAP, ExperimentType.RLNM_LLN, ExperimentType.RLNM_T]))
 execute_battery(battery, opt_out=out)

@@ -1,0 +1,7 @@
+,0
+continuos,"fnlwgt, capital_loss, educational_num, capital_gain, age, hours_per_week"
+n_continuos,6
+discrete,"native_country, workclass_name, education, relationship, occupation, race, gender, marital_status"
+n_discrete,8
+classes,"<=50K, >50K"
+n_classes,2

@@ -1,0 +1,7 @@
+,0
+continuos,"c_days_from_compas, end, event, priors_count, juv_fel_count, juv_misd_count, age, juv_other_count, start"
+n_continuos,9
+discrete,"type_of_assessment, race, sex, c_charge_degree"
+n_discrete,4
+classes,"c1, c3, c8, c4, c10, c5, c2, c7, c9, c6, c-1"
+n_classes,11

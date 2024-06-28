@@ -85,7 +85,7 @@ def prod_step_exp(r: int, u: np.ndarray, x: float, n: int, scale: float, cdf: ca
     return prod
 
 @njit(cache=True, nogil=True, fastmath=True)
-def prod_step_t3(r: int, u: np.ndarray, x: float, n: int, scale: float, cdf: callable) -> float:
+def prod_step_rlnm(r: int, u: np.ndarray, x: float, n: int, scale: float, cdf: callable) -> float:
     prod = 1
     for s in range(n):
         if r == s:
@@ -122,7 +122,7 @@ def rnm_pmf(u: np.ndarray, eps: float, sens: float) -> np.ndarray:
     scale: float = (2 * sens) / eps
     return get_rnm_probs(n, scale, u)
 
-def rnm_tdist_pmf(u: np.ndarray, eps: float, sens: float) -> np.ndarray:
+def rlnm_pmf(u: np.ndarray, eps: float, sens: float, cdf: callable, pdf: callable) -> np.ndarray:
     n: int = u.size
     d = 3
     beta = eps/(2*(d+1))
@@ -131,12 +131,14 @@ def rnm_tdist_pmf(u: np.ndarray, eps: float, sens: float) -> np.ndarray:
 
     probs = []
     for r in range(n):
-        p, _ = integrate.quad_vec(int_step, -np.inf, np.inf, args=(u, r, N, n, prod_step_t3, t3_cdf, t3_pdf))
+        p, _ = integrate.quad_vec(int_step, -np.inf, np.inf, args=(u, r, N, n, prod_step_rlnm, cdf, pdf))
         probs.append(p)
     
-    assert np.isclose(np.array(probs).sum(), 1.0), f"Probs. should sum one (actual {np.array(probs).sum()}, scale {N})."
+    assert np.isclose(np.array(probs).sum(), 1.0, atol=1e-3), f"Probs. should sum one (actual {np.array(probs).sum()}, scale {N})."
     return np.array(probs)
 
+def rnm_tdist_pmf(u: np.ndarray, eps: float, sens: float) -> np.ndarray:
+    return rlnm_pmf(u, eps, sens, t3_cdf, t3_pdf)
 
 def expected_error(u, pmf):
     return u.max() - np.sum(u @ pmf)

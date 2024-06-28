@@ -9,3 +9,6 @@ class ExperimentType(Enum):
     RLNM_LAPLACE = "rlnm_laplace"
     RLNM_EXPONENTIAL = "rlnm_exponential"
     LOCAL_DAMPENING = "ldp"
+    RLNM_T = "rlnm_t"
+    RLNM_LLN = "rlnm_lln"
+    RLNM_SLAP = "rlnm_smoothlap"

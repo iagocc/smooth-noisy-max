@@ -1,0 +1,7 @@
+,0
+continuos,"sd_back, sd_front, sd_left, sd_right"
+n_continuos,4
+discrete,
+n_discrete,0
+classes,"Slight-Right-Turn, Sharp-Right-Turn, Move-Forward, Slight-Left-Turn"
+n_classes,4

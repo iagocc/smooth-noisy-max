@@ -76,7 +76,7 @@ def experiment_dpid3_step(
 
 
 def experiment_dpid3():
-    logger = TreeLogger(experiment_name="new_ones", verbose=True)
+    logger = TreeLogger(experiment_name="lln", verbose=True)
     datasets = [("adult_clean", "income"), ("nltcs", "15"), ("acs", "22")]
     # datasets = [("adult_disc_20bucks", "14")]
     eps = [0.01, 0.05, 0.1, 0.5, 1, 2]
@@ -105,9 +105,9 @@ def experiment_dpid3():
                     # RNM(eps=privacy_budget, sens=gs),
                     # LocalDampeningMechanism(eps=deepcopy(privacy_budget), data=np.copy(ds), shifted=True, sens=gs),
                     # RLNM(eps=privacy_budget, sens=dm.smooth_sensitivity(data=ds, eps=e)),
-                    TStudentRLNM(eps=privacy_budget, sens=dm.smooth_sensitivity(ds, TStudentRLNM.get_beta(e, 3)), beta=TStudentRLNM.get_beta(e, 3)),
+                    # TStudentRLNM(eps=privacy_budget, sens=dm.smooth_sensitivity(ds, TStudentRLNM.get_beta(e, 3)), beta=TStudentRLNM.get_beta(e, 3)),
                     LlnRLNM(eps=privacy_budget, sens=dm.smooth_sensitivity(ds, LlnRLNM.get_beta(e)), beta=TStudentRLNM.get_beta(e, 3)),
-                    SmoothLaplaceRLNM(eps=privacy_budget, sens=dm.smooth_sensitivity(ds, SmoothLaplaceRLNM.get_beta(e, delta)), delta=delta)
+                    # SmoothLaplaceRLNM(eps=privacy_budget, sens=dm.smooth_sensitivity(ds, SmoothLaplaceRLNM.get_beta(e, delta)), delta=delta)
                 ]
                 for m in methods:
                     for step in range(times):

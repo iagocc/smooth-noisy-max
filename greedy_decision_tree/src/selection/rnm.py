@@ -44,21 +44,21 @@ class TStudentRLNM(RNM):
 @dataclass
 class LlnRLNM(RNM):
     beta: float
-    
+
     @staticmethod
     def get_beta(eps):
         return eps/2
 
     def __call__(self, u: np.ndarray) -> int:
-        def rv(sigma):
-            X = np.random.laplace()
-            Y = np.random.normal()
+        def rv(sigma: float, size: int):
+            X = np.random.laplace(size=size)
+            Y = np.random.normal(size=size)
             Z = X * np.exp(sigma * Y)
             return Z
 
         beta = self.beta
         opt_sigma = np.real(np.roots([5 * self.eps / beta, -5, 0, -1])[0])
-        Z = rv(opt_sigma)
+        Z = rv(opt_sigma, u.size)
         alpha = np.exp(-(3/2)*(opt_sigma**2)) * (self.eps - (abs(beta)/abs(opt_sigma)))
         noise = ((2*self.sens)/alpha)*Z
 

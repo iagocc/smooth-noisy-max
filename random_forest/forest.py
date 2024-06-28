@@ -61,6 +61,12 @@ def task_build_tree(
         set_majority_rnm(tree, budget, global_sens, label_col_name=label_col_name, dist="exponential")
     elif build_type == ExperimentType.LOCAL_DAMPENING:
         set_majority_ldp(tree, budget, label_col_name=label_col_name)
+    elif build_type == ExperimentType.RLNM_T:
+        set_majority_rnm(tree, budget, global_sens, label_col_name=label_col_name, dist="t")
+    elif build_type == ExperimentType.RLNM_SLAP:
+        set_majority_rnm(tree, budget, global_sens, label_col_name=label_col_name, dist="smooth_lap")
+    elif build_type == ExperimentType.RLNM_LLN:
+        set_majority_rnm(tree, budget, global_sens, label_col_name=label_col_name, dist="lln")
     else:
         raise ValueError("The build type should be set as valid value.")
 
