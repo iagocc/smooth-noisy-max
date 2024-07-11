@@ -69,6 +69,15 @@ def t3_cdf(x: float) -> float:
 def t3_pdf(x: float, scale: float) -> float:
     return 2 / (np.pi * np.sqrt(3) * (1 + (x**2 / 3))**2)
 
+# CDF and PDF of Lap
+@njit(cache=True, nogil=True, fastmath=True)
+def laplace_pdf(x: float, scale: float) -> float:
+    return 0.5 * np.exp(-np.abs(x))
+
+@njit(cache=True, nogil=True, fastmath=True)
+def laplace_cdf(x: float) -> float:
+    return 0.5 * (1 + np.sign(x) * (1 - np.exp(-np.abs(x))))
+
 @njit
 def mul(x, y):
     return operator.mul(x, y)
@@ -91,7 +100,7 @@ def prod_step_rlnm(r: int, u: np.ndarray, x: float, n: int, scale: float, cdf: c
         if r == s:
             continue
         else:
-            prod *= cdf((u[r] - u[s])/scale + x)
+            prod *= cdf((u[r] - u[s] + scale*x)/scale)
     return prod
 
 
@@ -122,23 +131,28 @@ def rnm_pmf(u: np.ndarray, eps: float, sens: float) -> np.ndarray:
     scale: float = (2 * sens) / eps
     return get_rnm_probs(n, scale, u)
 
-def rlnm_pmf(u: np.ndarray, eps: float, sens: float, cdf: callable, pdf: callable) -> np.ndarray:
+def rlnm_pmf(u: np.ndarray, eps: float, sens: float, cdf: callable, pdf: callable, scale: float) -> np.ndarray:
     n: int = u.size
-    d = 3
-    beta = eps/(2*(d+1))
-    alpha = 2 * np.sqrt(d) * (eps - abs(beta) * (d+1)) / (d+1)
-    N = (2*sens)/alpha
 
     probs = []
     for r in range(n):
-        p, _ = integrate.quad_vec(int_step, -np.inf, np.inf, args=(u, r, N, n, prod_step_rlnm, cdf, pdf))
+        p, _ = integrate.quad_vec(int_step, -np.inf, np.inf, args=(u, r, scale, n, prod_step_rlnm, cdf, pdf))
         probs.append(p)
     
     assert np.isclose(np.array(probs).sum(), 1.0, atol=1e-3), f"Probs. should sum one (actual {np.array(probs).sum()}, scale {N})."
     return np.array(probs)
 
 def rnm_tdist_pmf(u: np.ndarray, eps: float, sens: float) -> np.ndarray:
-    return rlnm_pmf(u, eps, sens, t3_cdf, t3_pdf)
+    d = 3
+    beta = eps/(2*(d+1))
+    alpha = 2 * np.sqrt(d) * (eps - abs(beta) * (d+1)) / (d+1)
+    scale = (2*sens)/alpha
+    return rlnm_pmf(u, eps, sens, t3_cdf, t3_pdf, scale)
+
+def rnm_lap_pmf(u: np.ndarray, eps: float, sens: float) -> np.ndarray:
+    alpha = eps
+    scale = (2*sens)/alpha
+    return rlnm_pmf(u, eps, sens, laplace_cdf, laplace_pdf, scale)
 
 def expected_error(u, pmf):
     return u.max() - np.sum(u @ pmf)
