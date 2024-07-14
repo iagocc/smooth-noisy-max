@@ -1,5 +1,6 @@
-# Report-locally-noisy-max
-The source code for the paper called "Report Locally Noisy Max: A differentially private selection algorithm based on local sensitivity".
+# Smooth Noisy Max
+The source code for the paper called "Differentially Private Selection using Smooth Sensitivity".
+The Smooth Noisy Max, formerly known as "report-locally-noisy-max," will be referred to as RLNM in the code.
 
 This repository contains the three applications shown in the paper.
 - Percentile Selection (`percentile_selection` folder)
