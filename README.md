@@ -1,3 +1,5 @@
+<meta name="robots" content="noindex">
+
 # Smooth Noisy Max
 The source code for the paper called "Differentially Private Selection using Smooth Sensitivity".
 The Smooth Noisy Max, formerly known as "report-locally-noisy-max," will be referred to as RLNM in the code.
